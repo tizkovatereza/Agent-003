@@ -27,13 +27,26 @@ from IPython.display import Markdown
 
 from dotenv import load_dotenv
 import os
+from google.oauth2 import service_account
 
-# Load environment variables from .env file
-load_dotenv()
+load_dotenv()  # Load environment variables from .env
+
+# Get the path to the service account file from the environment variable
+service_account_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+
+# Use the service account to authenticate
+credentials = service_account.Credentials.from_service_account_file(service_account_path)
+
+# You would use 'credentials' to initialize Google Cloud services as needed
+# Example: Initializing AI Platform
+from google.cloud import aiplatform
+
+aiplatform.init(project='your-google-cloud-project-id', location='us-central1', credentials=credentials)
 
 # Now you can use the environment variables as if they were set in the OS environment
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
 E2B_API_KEY = os.getenv('E2B_API_KEY')
+GOOGLE_APPLICATION_CREDENTIALS = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
 
 
 
@@ -153,10 +166,15 @@ chat = model.start_chat()
 
 #Import Optional from the typing Python module
 
-from google.oauth2 import service_account  # For service account credentials
+from google.oauth2 import service_account
 
-# If you need to use general credentials, import like this:
-from google.auth import credentials  # Generic credentials interface
+# Set the path to your service account key file
+#service_account_path = '/Users/terezatizkova/Developer/Agent-003/chrome-lambda-422701-b7-0e7a8614a65e.json' # Use environment variable here if needed
+#credentials = service_account.Credentials.from_service_account_file(service_account_path)
+
+# Initialize AI Platform with credentials
+from google.cloud import aiplatform
+aiplatform.init(project=PROJECT_ID, location=LOCATION, credentials=credentials)
 
 
 def init_sample(
