@@ -3,41 +3,96 @@
 # pip install --upgrade google-cloud-aiplatform
 # pip install python-dotenv
 
-# Import necessary libraries
-from typing import Optional
-import textwrap
-from dotenv import load_dotenv
-import os
-import pathlib
-import requests
+# pip install e2b_code_interpreter
 
-from IPython.display import Markdown
+
+# Restart kernel after installs so that your environment can access the new packages
+from typing import Optional
+import IPython
+
+'''
+app = IPython.Application.instance()
+app.kernel.do_shutdown(True)
+'''
+
+# Import the necessary libraries
+import pathlib
+import textwrap
 
 import google.generativeai as genai
+
+from IPython.display import display
+from IPython.display import Markdown
+
+
+from dotenv import load_dotenv
+import os
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Now you can use the environment variables as if they were set in the OS environment
+GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
+E2B_API_KEY = os.getenv('E2B_API_KEY')
+
+
+
+
+# Define a function to convert text to markdown
+def to_markdown(text):
+  text = text.replace('•', '  *')
+  return Markdown(textwrap.indent(text, '> ', predicate=lambda _: True))
+
+'''
+try:
+    # Used to securely store your API key
+    from google.colab import userdata
+
+    # Or use `os.getenv('API_KEY')` to fetch an environment variable.
+    GOOGLE_API_KEY=userdata.get('API_KEY')
+except ImportError:
+    import os
+    GOOGLE_API_KEY = os.environ['API_KEY']
+
+genai.configure(api_key=GOOGLE_API_KEY)
+
+E2B_API_KEY = "e2b_7dd15697d859d0e4e8c8aabdc7ee2e09a78fa12a"
+'''
+
+import sys
+
+# Authenticate to GCP
+if "google.colab" in sys.modules:
+    from google.colab import auth
+
+    auth.authenticate_user()
+
+
+# If you need to use general credentials, import like this:
+from google.auth import credentials  # Generic credentials interface
+
+
+
+PROJECT_ID = "[your-project-id]"  # @param {type:"string"}
+LOCATION = "us-central1"  # @param {type:"string"}
+
 import vertexai
+
+vertexai.init(project=PROJECT_ID, location=LOCATION) 
+
+import requests
 from vertexai.generative_models import (
     Content,
     FunctionDeclaration,
     GenerationConfig,
     GenerativeModel,
+    Part,
     Tool,
 )
 
-# Load environment variables
-load_dotenv()
-GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
-E2B_API_KEY = os.getenv('E2B_API_KEY')
 
-# Configuration for generative AI
-genai.configure(api_key=GOOGLE_API_KEY)
+# FUNCTIONS DECLARATIONS
 
-# Vertex AI and Project configuration
-PROJECT_ID = "[your-project-id]"
-LOCATION = "us-central1"
-
-vertexai.init(project=PROJECT_ID, location=LOCATION) 
-
-# Function declarations for the model
 get_current_weather_func = FunctionDeclaration(
     name="get_current_weather",
     description="Get the current weather in a given location",
@@ -79,7 +134,7 @@ place_order = FunctionDeclaration(
     },
 )
 
-# Create generative model with tools
+# GIVE MODEL TOOLS
 retail_tool = Tool(
     function_declarations=[
         get_product_info,
@@ -88,20 +143,46 @@ retail_tool = Tool(
     ],
 )
 
+# CREATE GENERATIVE MODEL
 model = GenerativeModel(
     "gemini-1.0-pro-001",
     generation_config=GenerationConfig(temperature=0),
     tools=[retail_tool],
 )
-
-# Start chat session with the model
 chat = model.start_chat()
 
-# Function to convert text to Markdown (if needed)
-def to_markdown(text):
-    text = text.replace('•', '  *')
-    return Markdown(textwrap.indent(text, '> ', predicate=lambda _: True))
+#Import Optional from the typing Python module
 
-# Send a message to the chat and print the response
+from google.oauth2 import service_account  # For service account credentials
+
+# If you need to use general credentials, import like this:
+from google.auth import credentials  # Generic credentials interface
+
+
+def init_sample(
+    project: Optional[str] = None,
+    location: Optional[str] = None,
+    experiment: Optional[str] = None,
+    staging_bucket: Optional[str] = None,
+    #credentials: Optional[google.auth.credentials.Credentials] = None,
+    encryption_spec_key_name: Optional[str] = None,
+    service_account: Optional[str] = None,
+):
+
+    from google.cloud import aiplatform
+
+    aiplatform.init(
+        project=project,
+        location=location,
+        experiment=experiment,
+        staging_bucket=staging_bucket,
+        credentials=credentials,
+        encryption_spec_key_name=encryption_spec_key_name,
+        service_account=service_account,
+    )
+
+
+chat = model.start_chat()  #enable_automatic_function_calling=True
+
 response = chat.send_message('I have 57 cats, each owns 44 mittens, how many mittens is that in total? And how many degrees it is in San Francisco?')
-print(response.text)
+response.text
